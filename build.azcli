@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# Placeholders
+rg="msbuild2"
+resource="msbuild$RANDOM"
+location="westus"
+
+# Create a resource group with location.
+az group create --name $rg --location $location
+
+# Create a storage account in the resource group.
+az storage account create --name $resource --location $location --resource-group $rg --sku Standard_LRS --kind StorageV2
+
+## Create a serverless function app in the resource group.
+#az functionapp create --name $resource --resource-group $rg --storage-account $resource --consumption-plan-location $location
+## Get the storage account connection string. 
+#connstr=$(az storage account show-connection-string --name $resource --resource-group $rg --query connectionString --output tsv)
+## Update function app settings to connect to the storage account.
+#az functionapp config appsettings set --name $resource --resource-group $rg --settings StorageConStr=$connstr
+
+# Create a Cognitive Services account
+az cognitiveservices account create --name $resource --resource-group $rg --location $location --kind CognitiveServices --sku S0 --yes
+
+# Create an eventhub
+az eventhubs namespace create --name $resource --resource-group $rg --location $location --enable-auto-inflate true --capacity 2 --maximum-throughput-units 10
+az eventhubs eventhub create --name $resource --namespace-name $resource --resource-group $rg 
+az eventhubs eventhub create --name $resource$RANDOM --namespace-name $resource --resource-group $rg 
+   
+# Create a databricks cluster using Quickstart template
+az group deployment create \
+  --name $resource \
+  --resource-group $rg \
+  --template-uri https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-databricks-workspace/azuredeploy.json \
+  --parameters workspaceName=$resource pricingTier=premium
+
+# Create a logic app using Quickstart template
+az group deployment create \
+  --name $resource \
+  --resource-group $rg \
+  --template-uri https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-logic-app-create/azuredeploy.json \
+  --parameters logicAppName=$resource
+  
