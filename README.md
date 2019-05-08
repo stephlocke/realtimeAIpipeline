@@ -43,38 +43,39 @@ In just 60 minutes, this session will demonstrate an end to end data pipeline su
 1. Open DataBricks workspace
 2. In the [workspace](https://docs.azuredatabricks.net/user-guide/workspace.html) section for your user, import the [dbc] from this repo
 3. Get the tweet streaming going
-     + Open AIpipeline > Tweet Stream notebook
+     + Open AIpipeline > Tweet Schema Definition notebook
      + Update the eventhub connection string with the eventhub being used by the logic app
      + Use Run All Below on top cell
 4. Get the image streaming going
-     + Open AIpipeline > Image Stream notebook
+     + Open AIpipeline > Image Schema Definition notebook
      + Update the eventhub connection string with the eventhub being used by the event grid
      + Use Run All Below on top cell
 
 ### Supplementing data with AI
 1. Open DataBricks workspace
 3. Get the tweet AI going
-     + Open AIpipeline > Tweet Supplement notebook
+     + Open AIpipeline > Tweet Supplementing notebook
      + Update the cognitive services key with your key
      + Adjust any endpoint URLs if required
      + Use Run All Below on top cell
 4. Get the image AI going
-     + Open AIpipeline > Image Supplement notebook
+     + Open AIpipeline > Image Supplementing notebook
      + Update the cognitive services key with your key
      + Adjust any endpoint URLs if required
      + Use Run All Below on top cell
      
 ### Realtime presentation
 1. Open PowerBI.com
-2. Create `tweet` streaming dataset with `enqueuedTime`: DateTime, `sentimentScore`:number, `tweet`:text
+2. Create `tweet` streaming dataset with `enqueuedTime`: DateTime, `sentimentScore`:number, `tweet`:text, `identifiedLanguage`:text
 3. Open Power BI streaming notebook and add PBI URL into `pbi_tweet`
 4. Create `image` streaming dataset with `enqueuedTime`: DateTime, `keyCategory`:text, `url`:text
-5. Open Power BI streaming notebook and add PBI URL into `pbi_image`
+5. Open Shipping to Power BI notebook and add PBI URL into `pbi_image`
 6. Use Run All Below on top cell
 7. Open Realtime notebook
      + Use Run All Below on top cell
      + Select Dashboard view
-     
+8. Create tiles on Power BI Dashboard
+
 ## Further reading
 - https://mmlspark.blob.core.windows.net/website/index.html#install
 - https://docs.databricks.com/spark/latest/structured-streaming/index.html
