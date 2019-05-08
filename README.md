@@ -41,7 +41,7 @@ In just 60 minutes, this session will demonstrate an end to end data pipeline su
  
 ### Building data streams
 1. Open DataBricks workspace
-2. In the [workspace](https://docs.azuredatabricks.net/user-guide/workspace.html) section for your user, import the [dbc] from this repo
+2. In the [workspace](https://docs.azuredatabricks.net/user-guide/workspace.html) section for your user, import the [dbc](https://github.com/lockedata/realtimeAIpipeline/raw/master/AIpipeline.dbc) from this repo
 3. Get the tweet streaming going
      + Open AIpipeline > Tweet Schema Definition notebook
      + Update the eventhub connection string with the eventhub being used by the logic app
