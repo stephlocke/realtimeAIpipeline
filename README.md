@@ -83,6 +83,7 @@ In just 60 minutes, this session will demonstrate an end to end data pipeline su
 - https://docs.databricks.com/spark/latest/structured-streaming/index.html
 - https://blogs.technet.microsoft.com/uktechnet/2019/02/20/structured-streaming-with-databricks-into-power-bi-cosmos-db/
 - https://docs.microsoft.com/en-us/azure/azure-databricks/databricks-stream-from-eventhubs
+- https://spark.apache.org/docs/2.1.0/ml-pipeline.html
 - https://azure.microsoft.com/en-gb/solutions/architecture/personalized-offers/
 - https://delta.io
 
