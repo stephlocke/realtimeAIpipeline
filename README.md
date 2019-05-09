@@ -1,5 +1,7 @@
 # Coding from scratch a realtime Azure data and AI pipeline
 In just 60 minutes, this session will demonstrate an end to end data pipeline supplemented by AI to achieve insights real-time. Using components like Azure Functions, Event Hubs, Databricks, Cognitive Services, and Power BI I'll be putting together a pipeline that takes our #msBuild social stream and analyses it realtime. Join me as I show how quickly these sorts of systems can be put together for awesome insight. 
+
+- [MS Build talk entry](https://mybuild.techcommunity.microsoft.com/sessions/77150)
  
  ## Building the pipeline
  ### Provisioning resources
