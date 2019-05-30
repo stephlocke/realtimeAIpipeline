@@ -4,6 +4,8 @@ In just 60 minutes, this session will demonstrate an end to end data pipeline su
 - [MS Build talk entry](https://mybuild.techcommunity.microsoft.com/sessions/77150)
 - Prerecorded demo vids: [The Azure Side](https://www.youtube.com/watch?v=0mh9qIyp4SU), [The AI side](https://youtu.be/1XhdKjBXoxM)
 - [Slides](https://sarahnightingalehq-my.sharepoint.com/:p:/g/personal/steph_nightingalehq_ai/EUKk4TanSB5Lq9Fb2OYXbjoB92e29yAe3Hw6RkqPn6wBzQ?e=ggxhzI)
+
+[![MS Build video](https://raw.githubusercontent.com/stephlocke/lazyCDN/master/realtimepipelinevidDND.png)](https://www.youtube.com/watch?v=Ja08cPsk3ck)
  
  ## Building the pipeline
  ### Provisioning resources
