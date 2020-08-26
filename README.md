@@ -12,26 +12,10 @@ In just 60 minutes, this session will demonstrate an end to end data pipeline su
  1. Open the Cloud Shell in Bash mode
  2. Adjust the variables in [build.azcli](build.azcli) to suit your needs
  3. Copy the file contents and use Shift + Insert to paste them into the cloud shell
- 4. Once finished, navigate to DataBricks resouce and open the workspace
- 5. Get a [PAT](https://docs.azuredatabricks.net/api/latest/authentication.html#token-management)
- 6. Run the first part of [databrickscluster.sh](databrickscluster.sh) i.e. up to and including `databricks configure`
- 7. Enter the url and PAT
- 8. Run the create cluster code and copy the cluster id to the end of the final two lines of databricks code
- 9. Run these final lines of code
  
  ### Building a logic app
- 1. Open the logic app and remove the current contents
- 2. Add a New Tweet trigger and insert your query
- 3. Add a Control IF action to filter out retweets
-     + Put OriginalTweet in condition, select equal to for comparison type, and then use the expression editor and search for null
- 4. In the True block, add an Eventhub action
- 5. Connect the action to one of your event hubs 
-     + Add the Content parameter and use an expression of `base64(triggerBody())`
- 7. Connect a Foreach action and use Media URLs
- 8. Inside the for each add a HTTP task
-    + Configure the HTTP task with GET and insert the `Current Item` (in code view = `@{items('For_each')}`) into the URL
- 10. Add a Create Blob task after the HTTP task and connect it to your storage account
-    + Set container to `images`, the blob name to custom expression `uriPath(Current Item)` (in code view = `@{items('For_each')}`), the contents to HTTP body
+ 1. Edit the logic app 
+ 2. Validate the twitter, eventhub, and blob connections
  
 ### Resizing images
 1. Use Azure Deploy option on [LD fork](https://github.com/lockedata/fl-image-resize) or [original](https://github.com/jefking/fl-image-resize) of resizing function

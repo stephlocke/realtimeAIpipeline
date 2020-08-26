@@ -1,22 +1,16 @@
 #!/bin/bash
 
 # Placeholders
-rg="msbuild2"
-resource="msbuild$RANDOM"
+rg="redgatestream"
+resource="rgstream$RANDOM"
 location="westus"
+subscription=$(az account show --query "id" -o tsv)
 
 # Create a resource group with location.
 az group create --name $rg --location $location
 
 # Create a storage account in the resource group.
 az storage account create --name $resource --location $location --resource-group $rg --sku Standard_LRS --kind StorageV2
-
-## Create a serverless function app in the resource group.
-#az functionapp create --name $resource --resource-group $rg --storage-account $resource --consumption-plan-location $location
-## Get the storage account connection string. 
-#connstr=$(az storage account show-connection-string --name $resource --resource-group $rg --query connectionString --output tsv)
-## Update function app settings to connect to the storage account.
-#az functionapp config appsettings set --name $resource --resource-group $rg --settings StorageConStr=$connstr
 
 # Create a Cognitive Services account
 az cognitiveservices account create --name $resource --resource-group $rg --location $location --kind CognitiveServices --sku S0 --yes
@@ -25,18 +19,81 @@ az cognitiveservices account create --name $resource --resource-group $rg --loca
 az eventhubs namespace create --name $resource --resource-group $rg --location $location --enable-auto-inflate true --capacity 2 --maximum-throughput-units 10
 az eventhubs eventhub create --name $resource --namespace-name $resource --resource-group $rg 
 az eventhubs eventhub create --name $resource$RANDOM --namespace-name $resource --resource-group $rg 
-   
-# Create a databricks cluster using Quickstart template
+
+# Create a logic app
 az group deployment create \
+  --name $resource \
+  --resource-group $rg \
+  --template-file azuredeploy.json \
+  --parameters workflows_redgatestreamed_name=$resource eventhub_name=$resource
+     
+# Create a databricks cluster using Quickstart template and stash the resource id for later
+dbId=$(az group deployment create \
   --name $resource \
   --resource-group $rg \
   --template-uri https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-databricks-workspace/azuredeploy.json \
-  --parameters workspaceName=$resource pricingTier=premium
+  --parameters workspaceName=$resource pricingTier=premium \
+  --query "id" \
+  --output tsv )
 
-# Create a logic app using Quickstart template
-az group deployment create \
-  --name $resource \
-  --resource-group $rg \
-  --template-uri https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-logic-app-create/azuredeploy.json \
-  --parameters logicAppName=$resource
-  
+# Get AAD token for databricks portal
+# Magic object id for azuredatabricks enterprise application owned by microsoft
+magic="2ff814a6-3304-4ab8-85cb-cd0e6f879c1d"
+token=$(az account get-access-token --resource $magic)
+tokensplit=($(echo $token | tr "\"" "\n"))
+# hardcoded but it's the fourth value in 0-based array ie 1={ 2=access_token 3=: 4=<token>
+accesstoken=$(echo ${tokensplit[@]:3:1})
+
+# Get a token for the Azure management API
+mgmt="https://management.core.windows.net/"
+token=$(az account get-access-token --resource $mgmt)
+tokensplit=($(echo $token | tr "\"" "\n"))
+# hardcoded but it's the fourth value in 0-based array ie 1={ 2=access_token 3=: 4=<token>
+mgmtaccesstoken=$(echo ${tokensplit[@]:3:1})
+
+# Find out databricks workspace url
+workspaceraw=$(curl -X GET \
+-H "Authorization: Bearer $mgmtaccesstoken" \
+"https://management.azure.com/subscriptions/$subscription/resourceGroups/$rg/providers/Microsoft.Databricks/workspaces?api-version=2018-04-01")
+workspaceurl=$(echo $workspaceraw | sed -n "s/^.*\(adb.*azuredatabricks\.net\).*$/\1/p")
+
+# Make a PAT token
+requestpat=$(curl -sf "https://$workspaceurl/api/2.0/token/create" \
+  -H "Authorization: Bearer $accesstoken" \
+  -H "X-Databricks-Azure-SP-Management-Token: $mgmtaccesstoken" \
+  -H "X-Databricks-Azure-Workspace-Resource-Id: $dbId" \
+  -d '{ "lifetime_seconds": 3000, "comment": "Redgate streamed!" }')
+tokensplit=($(echo $requestpat | tr "\"" "\n"))
+# hardcoded but it's the fourth value in 0-based array ie 1={ 2=access_token 3=: 4=<token>
+pattoken=$(echo ${tokensplit[@]:3:1})
+
+# set up databricks cli & config
+virtualenv -p /usr/bin/python3.8 databrickscli
+source databrickscli/bin/activate
+pip3 install databricks-cli
+touch ~/.databrickscfg
+echo "[DEFAULT]" >> ~/.databrickscfg
+echo "host = https://$workspaceurl" >> ~/.databrickscfg
+echo "token = $pattoken" >> ~/.databrickscfg
+echo "" >> ~/.databrickscfg
+
+# Create a cluster
+clusterraw=$(databricks clusters create --json "
+{\"cluster_name\": \"autoscaling-cluster\",
+\"spark_version\": \"4.0.x-scala2.1\",
+  \"node_type_id\": \"Standard_D3_v2\",
+  \"autoscale\" : {
+    \"min_workers\": 1,
+    \"max_workers\": 5
+  },
+  \"autotermination_minutes\":30
+}")
+clustersplit=($(echo $clusterraw | tr "\"" "\n"))
+# hardcoded but it's the fourth value in 0-based array ie 1={ 2=access_token 3=: 4=<token>
+clusterid=$(echo ${clustersplit[@]:3:1})
+
+# Add MMLSpark and Event hubs connector to cluster
+sleep 60
+databricks libraries install --maven-coordinates Azure:mmlspark:0.16 --cluster-id $clusterid
+databricks libraries install --maven-coordinates com.microsoft.azure:azure-eventhubs-spark_2.11:2.3.11 --cluster-id $clusterid
+
