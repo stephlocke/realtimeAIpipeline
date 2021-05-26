@@ -1,0 +1,37 @@
+name: setup infrastructure
+
+on: push
+
+env:
+  # Common variables
+  AZURE_RESOURCE_GROUP: 'dataceili'
+
+jobs:
+  bicep-build-and-deploy:
+    name: bicep build and deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checks out a copy of your repository on the ubuntu-latest machine
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Transpile bicep file into ARM template
+      - name: Build ARM Template from bicep file
+        run: |
+          az bicep build --file ./realtimepipeline.bicep
+
+      # Login to Azure
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }} 
+
+      # Deploy infrastructure
+      - name: Deploy template
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            dbId=$(az deployment group create -f ./realtimepipeline.json -g ${{ env.AZURE_RESOURCE_GROUP }} --query "dbId"  --output tsv)
+            export dbId=dbId
+            echo "::set-env name=dbId::$dbId"
