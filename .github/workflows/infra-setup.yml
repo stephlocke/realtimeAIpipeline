@@ -121,7 +121,7 @@ jobs:
       - name: Setup Databricks CLI
         uses: azure/CLI@v1
         with:
-          run: |
+          inlineScript: |
             pip install databricks-cli
             touch ~/.databrickscfg
             echo "[DEFAULT]" >> ~/.databrickscfg
