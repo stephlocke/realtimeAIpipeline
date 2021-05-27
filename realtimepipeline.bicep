@@ -197,7 +197,7 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
               description: 'Iterate through each media URL'
               runAfter: {}
               type: 'Foreach'
-              foreach: '@body(\'Search_Tweets\')'
+              foreach: '@items(\'Process_for_images\')[\'MediaUrls\']'
               actions: {
                 Fetch_Image: {
                   description: 'HTTP GET call to retrieve media'
