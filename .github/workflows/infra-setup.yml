@@ -117,7 +117,7 @@ jobs:
             pattoken=$(echo ${tokensplit[@]:3:1})
             echo "pattoken=$pattoken" >> $GITHUB_ENV
 
-      # Setup Databricks CLI
+      # Setup Databricks CLI, Create cluster, Add MLSpark & Event Hubs
       - name: Setup Databricks CLI
         uses: azure/CLI@v1
         with:
@@ -128,12 +128,6 @@ jobs:
             echo "host = https://${{env.workspaceurl}}" >> ~/.databrickscfg
             echo "token = ${{env.pattoken}}" >> ~/.databrickscfg
             echo "" >> ~/.databrickscfg
-
-      # Create cluster
-      - name: Create Cluster
-        uses: azure/CLI@v1
-        with:
-          inlineScript: |
             clusterraw=$(databricks clusters create --json "
             {\"cluster_name\": \"autoscaling-cluster\",
             \"spark_version\": \"6.6.x-scala2.11\",
@@ -147,12 +141,6 @@ jobs:
             clustersplit=($(echo $clusterraw | tr "\"" "\n"))
             clusterid=$(echo ${clustersplit[@]:3:1})
             echo "clusterid=$clusterid" >> $GITHUB_ENV
-
-      # Add MLSpark & Event Hubs
-      - name: Add MLSpark & Event Hubs
-        uses: azure/CLI@v1
-        with:
-          inlineScript: |
             sleep 60
             databricks libraries install --maven-resolver https://mmlspark.azureedge.net/maven --maven-coordinates com.microsoft.ml.spark:mmlspark_2.11:1.0.0-rc2 --cluster-id ${{env.clusterid}}
             databricks libraries install --maven-coordinates com.microsoft.azure:azure-eventhubs-spark_2.11:2.3.17 --cluster-id ${{env.clusterid}}
