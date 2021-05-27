@@ -121,10 +121,8 @@ jobs:
       - name: Setup Databricks CLI
         uses: azure/CLI@v1
         with:
-          inlineScript: |
-            virtualenv -p /usr/bin/python3.8 databrickscli
-            source databrickscli/bin/activate
-            pip3 install databricks-cli
+          run: |
+            pip install databricks-cli
             touch ~/.databrickscfg
             echo "[DEFAULT]" >> ~/.databrickscfg
             echo "host = https://${{env.workspaceurl}}" >> ~/.databrickscfg
@@ -151,7 +149,7 @@ jobs:
             echo "clusterid=$clusterid" >> $GITHUB_ENV
 
       # Add MLSpark & Event Hubs
-      - name: Create Cluster
+      - name: Add MLSpark & Event Hubs
         uses: azure/CLI@v1
         with:
           inlineScript: |
