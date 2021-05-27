@@ -46,7 +46,7 @@ resource lgBlob 'Microsoft.Web/connections@2016-06-01' = {
       id: concat(apiFragment, 'azureblob')
     }
     parameterValues: {
-      accessKey: listKeys(store.id,'2021-02-01').key1
+      accessKey: listKeys(store.id,'2021-02-01').keys[0].value
       accountName: store.name
     }
   }
