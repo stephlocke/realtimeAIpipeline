@@ -72,24 +72,13 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
   location: location
   properties: {
     state: 'Enabled'
-    parameters: {
-      connections:{
-        value:{
-          azureblob : {
-            connectionId: lgBlob.id
-            connectionName:'store'
-            id: concat(apiFragment, 'azureblob')
-          }
-          twitter : {
-            connectionId: lgTwitter.id
-            connectionName:'twitter'
-            id: concat(apiFragment, 'twitter')
-          }
-        } 
-      }
-    }
     definition: {
       '$schema': 'https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#'
+      parameters: {
+          '$connections': {
+              type: 'Object'
+          }
+      }
       triggers:  {
         recurrence: {
           type: 'recurrence'
@@ -218,7 +207,23 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         }
       }
     }
-  }
+    parameters: {
+      '$connections':{
+        value:{
+          azureblob : {
+            connectionId: lgBlob.id
+            connectionName:'store'
+            id: concat(apiFragment, 'azureblob')
+          }
+          twitter : {
+            connectionId: lgTwitter.id
+            connectionName:'twitter'
+            id: concat(apiFragment, 'twitter')
+          }
+        } 
+      }
+    }
+  } 
 }
 
 
