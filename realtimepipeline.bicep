@@ -170,6 +170,7 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             }
             method: 'post'
             path: '/datasets/default/files'
+            body: '@body(\'Create_CSV\')'
             queries: {
               folderPath: 'tweets'
               name: '@{concat(utcNow(),\'.csv\')}'
@@ -223,6 +224,7 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                     }
                     method: 'post'
                     path: '/datasets/default/files'
+                    body: '@body(\'Fetch_Image\')'
                     queries: {
                       folderPath: 'images'
                       name: '@{uriPath(item())}'
