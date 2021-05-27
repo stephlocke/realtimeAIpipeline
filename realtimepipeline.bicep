@@ -55,10 +55,10 @@ resource lgTwitter 'Microsoft.Web/connections@2016-06-01' = {
   name: concat(rg, 'twitter')
   location: location
   properties: {
+    api: {
+      id: concat(apiFragment, 'twitter')
+    }
     customParameterValues: {
-      api: {
-        id: concat(apiFragment, 'twitter')
-      }
     }
   }
 }
