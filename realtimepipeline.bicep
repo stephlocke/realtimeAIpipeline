@@ -2,6 +2,10 @@ var rg = resourceGroup().name
 var location  = resourceGroup().location
 var apiFragment  = concat(subscription().id, '/providers/Microsoft.Web/locations/',location,'/managedApis/')
 var managedResourceGroupName  = '${subscription().id}/resourceGroups/databricks-rg-db-${uniqueString(rg, resourceGroup().id)}'
+var success = [
+  'Success'
+]
+
 // storage
 resource store 'Microsoft.Storage/storageAccounts@2021-02-01' = {
   name: concat(rg, 'store')
@@ -117,7 +121,7 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         Create_CSV: {
           description: 'Flatten tweets down for simplicity'
           runAfter: {
-            Search_Tweets: 'Succeeded'
+            Search_Tweets: success
           }
           type: 'Table'
           inputs: {
@@ -128,7 +132,7 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         Store_CSV: {
           description: 'Ship the CSV to blob store - mimics new data arriving near real-time'
           runAfter: {
-            Create_CSV: 'Succeeded'
+            Create_CSV: success
           }
           type: 'ApiConnection'
           inputs: {
@@ -154,7 +158,7 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         Process_for_images: {
           description: 'Iterate to find tweets with images to store'
           runAfter: {
-            Store_CSV: 'Succeeded'
+            Store_CSV: success
           }
           type: 'Foreach'
           foreach: '@body(\'Search_Tweets\')'
@@ -177,7 +181,7 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                 Store_Image: {
                   description: 'Ship the CSV to blob store - mimics new data arriving near real-time'
                   runAfter: {
-                    Fetch_Image: 'Succeeded'
+                    Fetch_Image: success
                   }
                   type: 'ApiConnection'
                   inputs: {
