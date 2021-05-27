@@ -118,7 +118,7 @@ jobs:
             echo "pattoken=$pattoken" >> $GITHUB_ENV
 
       # Setup Databricks CLI, Create cluster, Add MLSpark & Event Hubs
-      - name: Setup Databricks CLI
+      - name: Setup Databricks CLI, Create Cluster, Add Extras
         uses: azure/CLI@v1
         with:
           inlineScript: |
@@ -140,7 +140,6 @@ jobs:
             }")
             clustersplit=($(echo $clusterraw | tr "\"" "\n"))
             clusterid=$(echo ${clustersplit[@]:3:1})
-            echo "clusterid=$clusterid" >> $GITHUB_ENV
             sleep 60
-            databricks libraries install --maven-resolver https://mmlspark.azureedge.net/maven --maven-coordinates com.microsoft.ml.spark:mmlspark_2.11:1.0.0-rc2 --cluster-id ${{env.clusterid}}
-            databricks libraries install --maven-coordinates com.microsoft.azure:azure-eventhubs-spark_2.11:2.3.17 --cluster-id ${{env.clusterid}}
+            databricks libraries install --maven-resolver https://mmlspark.azureedge.net/maven --maven-coordinates com.microsoft.ml.spark:mmlspark_2.11:1.0.0-rc2 --cluster-id $clusterid
+            databricks libraries install --maven-coordinates com.microsoft.azure:azure-eventhubs-spark_2.11:2.3.17 --cluster-id $clusterid
