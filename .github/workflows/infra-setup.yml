@@ -4,12 +4,14 @@ on: push
 
 env:
   # Common variables
-  AZURE_RESOURCE_GROUP: 'dataceili'
-  LOCATION: 'uksouth'
-  MANAGEMENT_URI: 'https://management.core.windows.net/'
-  WORKSPACES_URI: 'https://management.azure.com/subscriptions/$subscription/resourceGroups/$rg/providers/Microsoft.Databricks/workspaces?api-version=2018-04-01'
+  AZURE_RESOURCE_GROUP: "dataceili"
+  LOCATION: "uksouth"
+  MANAGEMENT_URI: "https://management.core.windows.net/"
+  WORKSPACES_URI: "https://management.azure.com/subscriptions/$subscription/resourceGroups/$rg/providers/Microsoft.Databricks/workspaces?api-version=2018-04-01"
   # Magic object id for azuredatabricks enterprise application owned by microsoft
-  MAGIC: '2ff814a6-3304-4ab8-85cb-cd0e6f879c1d'
+  MAGIC: "2ff814a6-3304-4ab8-85cb-cd0e6f879c1d"
+  # Enable this variable to allow set-env (https://github.blog/changelog/2020-10-01-github-actions-deprecating-set-env-and-add-path-commands/)
+  #ACTIONS_ALLOW_UNSECURE_COMMANDS: true
 
 jobs:
   bicep-build-and-deploy:
@@ -30,22 +32,21 @@ jobs:
       - name: Azure Login
         uses: azure/login@v1
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }} 
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       # Create resource group
       - name: Setup RG
         run: |
           az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location ${{ env.LOCATION }}
-      
+
       # Deploy infrastructure
       - name: Deploy template
         uses: azure/CLI@v1
         with:
           inlineScript: |
             dbId=$(az deployment group create -f ./realtimepipeline.json -g ${{ env.AZURE_RESOURCE_GROUP }} --query "dbId"  --output tsv)
-            export dbId=dbId
-            echo "::set-env name=dbId::$dbId"
-      
+            echo "dbId=dbId" >> $GITHUB_ENV
+
       # Get AAD token for databricks portal
       - name: Get AAD Token
         uses: azure/CLI@v1
@@ -54,8 +55,7 @@ jobs:
             token=$(az account get-access-token --resource ${{ env.MAGIC }})
             tokensplit=($(echo $token | tr "\"" "\n"))
             accesstoken=$(echo ${tokensplit[@]:3:1})
-            export accesstoken=accesstoken
-            echo "::set-env name=accesstoken::$accesstoken"
+            echo "accesstoken=accesstoken" >> $GITHUB_ENV
 
       # Get Azure Management token
       - name: Get AAD Token
@@ -65,9 +65,8 @@ jobs:
             token=$(az account get-access-token --resource ${{ env.MANAGEMENT_URI }})
             tokensplit=($(echo $token | tr "\"" "\n"))
             mgmtaccesstoken=$(echo ${tokensplit[@]:3:1})
-            export mgmtaccesstoken=mgmtaccesstoken
-            echo "::set-env name=mgmtaccesstoken::$mgmtaccesstoken"
-      
+            echo "mgmtaccesstoken=mgmtaccesstoken" >> $GITHUB_ENV
+
       # Get Databricks Workspace URL
       - name: Get AAD Token
         uses: azure/CLI@v1
@@ -75,9 +74,8 @@ jobs:
           inlineScript: |
             workspaceraw=$(curl -X GET -H "Authorization: Bearer {{ env.mgmtaccesstoken }}" {{ env.WORKSPACES_URI  }})
             workspaceurl=$(echo $workspaceraw | sed -n "s/^.*\(adb.*azuredatabricks\.net\).*$/\1/p")
-            export workspaceurl=workspaceurl
-            echo "::set-env name=workspaceurl::$workspaceurl"
-      
+            echo "workspaceurl=workspaceurl" >> $GITHUB_ENV
+
       # Create PAT token
       - name: Create PAT Token
         uses: azure/CLI@v1
@@ -90,9 +88,8 @@ jobs:
             -d '{ "lifetime_seconds": 3000, "comment": "Redgate streamed!" }')
             tokensplit=($(echo $requestpat | tr "\"" "\n"))
             pattoken=$(echo ${tokensplit[@]:3:1})
-            export pattoken=pattoken
-            echo "::set-env name=pattoken::$pattoken"
-      
+            echo "pattoken=pattoken" >> $GITHUB_ENV
+
       # Setup Databricks CLI
       - name: Setup Databricks CLI
         uses: azure/CLI@v1
@@ -104,9 +101,9 @@ jobs:
             touch ~/.databrickscfg
             echo "[DEFAULT]" >> ~/.databrickscfg
             echo "host = https://{{ env.workspaceurl }}" >> ~/.databrickscfg
-            echo "token = $pattoken" >> ~/.databrickscfg
+            echo "token = {{ env.pattoken }}" >> ~/.databrickscfg
             echo "" >> ~/.databrickscfg
-      
+
       # Create cluster
       - name: Create Cluster
         uses: azure/CLI@v1
@@ -124,8 +121,7 @@ jobs:
             }")
             clustersplit=($(echo $clusterraw | tr "\"" "\n"))
             clusterid=$(echo ${clustersplit[@]:3:1})
-            export clusterid=clusterid
-            echo "::set-env name=clusterid::$clusterid"
+            echo "clusterid=clusterid" >> $GITHUB_ENV
 
       # Add MLSpark & Event Hubs
       - name: Create Cluster
