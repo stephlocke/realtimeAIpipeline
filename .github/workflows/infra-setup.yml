@@ -46,7 +46,7 @@ jobs:
       - name: Deploy ARM Template
         uses: azure/CLI@v1
         with:
-          script: |
+          inlineScript: |
             dbId=$(az deployment group create -f ./realtimepipeline.json -g ${env.AZURE_RESOURCE_GROUP} --query "dbId"  --output tsv)
             echo "dbId=dbId" >> $GITHUB_ENV
             echo "Retrieved DB ID: $dbId"
