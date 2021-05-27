@@ -255,7 +255,7 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                       }
                     }
                     method: 'post'
-                    path: '/@{encodeURIComponent(\'images\')}/events'
+                    path: '/@{encodeURIComponent(\'ehimages\')}/events'
                   }
                 }
               }
@@ -286,7 +286,7 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                   }
                 }
                 method: 'post'
-                path: '/@{encodeURIComponent(\'tweets\')}/events'
+                path: '/@{encodeURIComponent(\'ehtweets\')}/events'
               }
             }
           }
