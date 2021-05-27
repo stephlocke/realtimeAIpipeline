@@ -141,5 +141,5 @@ jobs:
             clustersplit=($(echo $clusterraw | tr "\"" "\n"))
             clusterid=$(echo ${clustersplit[@]:3:1})
             sleep 60
-            databricks libraries install --maven-coordinates com.microsoft.ml.spark:mmlspark_2.11:1.0.0-rc2 --cluster-id $clusterid
+            databricks libraries install --maven-repo https://mmlspark.azureedge.net/maven --maven-coordinates com.microsoft.ml.spark:mmlspark_2.11:1.0.0-rc2 --cluster-id $clusterid
             databricks libraries install --maven-coordinates com.microsoft.azure:azure-eventhubs-spark_2.11:2.3.17 --cluster-id $clusterid
