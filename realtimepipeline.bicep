@@ -121,7 +121,9 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         Create_CSV: {
           description: 'Flatten tweets down for simplicity'
           runAfter: {
-            Search_Tweets: success
+            Search_Tweets: [
+              'Success'
+            ]
           }
           type: 'Table'
           inputs: {
@@ -132,7 +134,9 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         Store_CSV: {
           description: 'Ship the CSV to blob store - mimics new data arriving near real-time'
           runAfter: {
-            Create_CSV: success
+            Create_CSV: [
+              'Success'
+            ]
           }
           type: 'ApiConnection'
           inputs: {
@@ -158,7 +162,9 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
         Process_for_images: {
           description: 'Iterate to find tweets with images to store'
           runAfter: {
-            Store_CSV: success
+            Store_CSV: [
+              'Success'
+            ]
           }
           type: 'Foreach'
           foreach: '@body(\'Search_Tweets\')'
@@ -181,7 +187,9 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                 Store_Image: {
                   description: 'Ship the CSV to blob store - mimics new data arriving near real-time'
                   runAfter: {
-                    Fetch_Image: success
+                    Fetch_Image: [
+                      'Success'
+                    ]
                   }
                   type: 'ApiConnection'
                   inputs: {
