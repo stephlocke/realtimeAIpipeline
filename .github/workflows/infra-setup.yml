@@ -54,14 +54,17 @@ jobs:
       
       # Deploy ARM template
       - name: Deploy ARM template
+        id: deploy
         uses: azure/arm-deploy@v1
         with:
           subscriptionId: ${{env.subscription}}
           resourceGroupName: ${{env.AZURE_RESOURCE_GROUP}}
           template: ./realtimepipeline.json
           parameters:
-        # output dbId variable from template
-      - run: |
+
+      # Get deployment outputs
+      - name: Get deployment outputs
+        run: |
           dbId=${{steps.deploy.outputs.dbId}}
           echo "dbId=$dbId" >> $GITHUB_ENV
           echo "Retrieved DB ID: $dbId"
