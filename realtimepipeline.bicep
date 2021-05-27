@@ -252,9 +252,9 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                         name: '@parameters(\'$connections\')[\'eventhub\'][\'connectionId\']'
                       }
                     }
+                    method: 'post'
+                    path: '/@{encodeURIComponent(\'images\')}/events'
                   }
-                  method: 'post'
-                  path: '/@{encodeURIComponent(\'images\')}/events'
                 }
               }
             }
@@ -283,9 +283,9 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                     name: '@parameters(\'$connections\')[\'eventhub\'][\'connectionId\']'
                   }
                 }
+                method: 'post'
+                path: '/@{encodeURIComponent(\'tweets\')}/events'
               }
-              method: 'post'
-              path: '/@{encodeURIComponent(\'tweets\')}/events'
             }
           }
         }        
