@@ -5,6 +5,7 @@ on: push
 env:
   # Common variables
   AZURE_RESOURCE_GROUP: 'dataceili'
+  LOCATION: 'uksouth'
 
 jobs:
   bicep-build-and-deploy:
@@ -27,6 +28,10 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }} 
 
+      # Create resource group
+      - name: Setup RG
+        run: |
+          az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location ${{ env.LOCATION }}
       # Deploy infrastructure
       - name: Deploy template
         uses: azure/CLI@v1
