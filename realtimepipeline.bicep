@@ -247,10 +247,10 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                     body: {
                       ContentData: '@{base64(item())}'
                     }
-                  }
-                  host: {
-                    connection: {
-                      name: '@parameters(\'$connections\')[\'eventhub\'][\'connectionId\']'
+                    host: {
+                      connection: {
+                        name: '@parameters(\'$connections\')[\'eventhub\'][\'connectionId\']'
+                      }
                     }
                   }
                   method: 'post'
@@ -278,10 +278,10 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                 body: {
                   ContentData: '@{base64(item())}'
                 }
-              }
-              host: {
-                connection: {
-                  name: '@parameters(\'$connections\')[\'eventhub\'][\'connectionId\']'
+                host: {
+                  connection: {
+                    name: '@parameters(\'$connections\')[\'eventhub\'][\'connectionId\']'
+                  }
                 }
               }
               method: 'post'
