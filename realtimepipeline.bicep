@@ -27,13 +27,13 @@ resource eventhub 'Microsoft.EventHub/namespaces@2021-01-01-preview' = {
   name: concat(rg, 'eh')
   location: location  
 }
-resource ehTweets 'Microsoft.EventHub/namespaces/eventhubs@2021-01-01-preview' = {
+resource ehTweets 'Microsoft.EventHub/namespaces/eventhubs@2017-04-01' = {
   name: concat(eventhub.name,'/ehTweets')
 }
-resource ehImages 'Microsoft.EventHub/namespaces/eventhubs@2021-01-01-preview' = {
+resource ehImages 'Microsoft.EventHub/namespaces/eventhubs@2017-04-01' = {
   name: concat(eventhub.name,'/ehImages')
 }
-resource ehAuth 'Microsoft.EventHub/namespaces/authorizationRules@2021-01-01-preview' = {
+resource ehAuth 'Microsoft.EventHub/namespaces/authorizationRules@2017-04-01' = {
   name: concat(eventhub.name,'/RootMAnageSharedAccessKey')
   properties: {
     rights: [
