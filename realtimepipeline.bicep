@@ -250,7 +250,7 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                   }
                   host: {
                     connection: {
-                      name: '@parameters(\'$connections\')[\'eventhubs\'][\'connectionId\']'
+                      name: '@parameters(\'$connections\')[\'eventhub\'][\'connectionId\']'
                     }
                   }
                   method: 'post'
@@ -281,7 +281,7 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
               }
               host: {
                 connection: {
-                  name: '@parameters(\'$connections\')[\'eventhubs\'][\'connectionId\']'
+                  name: '@parameters(\'$connections\')[\'eventhub\'][\'connectionId\']'
                 }
               }
               method: 'post'
