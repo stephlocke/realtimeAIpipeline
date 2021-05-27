@@ -6,6 +6,10 @@ env:
   # Common variables
   AZURE_RESOURCE_GROUP: 'dataceili'
   LOCATION: 'uksouth'
+  MANAGEMENT_URI: 'https://management.core.windows.net/'
+  WORKSPACES_URI: 'https://management.azure.com/subscriptions/$subscription/resourceGroups/$rg/providers/Microsoft.Databricks/workspaces?api-version=2018-04-01'
+  # Magic object id for azuredatabricks enterprise application owned by microsoft
+  MAGIC: '2ff814a6-3304-4ab8-85cb-cd0e6f879c1d'
 
 jobs:
   bicep-build-and-deploy:
@@ -32,6 +36,7 @@ jobs:
       - name: Setup RG
         run: |
           az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location ${{ env.LOCATION }}
+      
       # Deploy infrastructure
       - name: Deploy template
         uses: azure/CLI@v1
@@ -40,3 +45,93 @@ jobs:
             dbId=$(az deployment group create -f ./realtimepipeline.json -g ${{ env.AZURE_RESOURCE_GROUP }} --query "dbId"  --output tsv)
             export dbId=dbId
             echo "::set-env name=dbId::$dbId"
+      
+      # Get AAD token for databricks portal
+      - name: Get AAD Token
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            token=$(az account get-access-token --resource ${{ env.MAGIC }})
+            tokensplit=($(echo $token | tr "\"" "\n"))
+            accesstoken=$(echo ${tokensplit[@]:3:1})
+            export accesstoken=accesstoken
+            echo "::set-env name=accesstoken::$accesstoken"
+
+      # Get Azure Management token
+      - name: Get AAD Token
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            token=$(az account get-access-token --resource ${{ env.MANAGEMENT_URI }})
+            tokensplit=($(echo $token | tr "\"" "\n"))
+            mgmtaccesstoken=$(echo ${tokensplit[@]:3:1})
+            export mgmtaccesstoken=mgmtaccesstoken
+            echo "::set-env name=mgmtaccesstoken::$mgmtaccesstoken"
+      
+      # Get Databricks Workspace URL
+      - name: Get AAD Token
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            workspaceraw=$(curl -X GET -H "Authorization: Bearer {{ env.mgmtaccesstoken }}" {{ env.WORKSPACES_URI  }})
+            workspaceurl=$(echo $workspaceraw | sed -n "s/^.*\(adb.*azuredatabricks\.net\).*$/\1/p")
+            export workspaceurl=workspaceurl
+            echo "::set-env name=workspaceurl::$workspaceurl"
+      
+      # Create PAT token
+      - name: Create PAT Token
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            requestpat=$(curl -sf "https://{{ env.workspaceurl }}/api/2.0/token/create" \
+            -H "Authorization: Bearer {{ env.accesstoken }}" \
+            -H "X-Databricks-Azure-SP-Management-Token: {{ env.mgmtaccesstoken }}" \
+            -H "X-Databricks-Azure-Workspace-Resource-Id: {{ env.dbId }}" \
+            -d '{ "lifetime_seconds": 3000, "comment": "Redgate streamed!" }')
+            tokensplit=($(echo $requestpat | tr "\"" "\n"))
+            pattoken=$(echo ${tokensplit[@]:3:1})
+            export pattoken=pattoken
+            echo "::set-env name=pattoken::$pattoken"
+      
+      # Setup Databricks CLI
+      - name: Setup Databricks CLI
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            virtualenv -p /usr/bin/python3.8 databrickscli
+            source databrickscli/bin/activate
+            pip3 install databricks-cli
+            touch ~/.databrickscfg
+            echo "[DEFAULT]" >> ~/.databrickscfg
+            echo "host = https://{{ env.workspaceurl }}" >> ~/.databrickscfg
+            echo "token = $pattoken" >> ~/.databrickscfg
+            echo "" >> ~/.databrickscfg
+      
+      # Create cluster
+      - name: Create Cluster
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            clusterraw=$(databricks clusters create --json "
+            {\"cluster_name\": \"autoscaling-cluster\",
+            \"spark_version\": \"6.6.x-scala2.11\",
+              \"node_type_id\": \"Standard_D3_v2\",
+              \"autoscale\" : {
+                \"min_workers\": 1,
+                \"max_workers\": 5
+              },
+              \"autotermination_minutes\":30
+            }")
+            clustersplit=($(echo $clusterraw | tr "\"" "\n"))
+            clusterid=$(echo ${clustersplit[@]:3:1})
+            export clusterid=clusterid
+            echo "::set-env name=clusterid::$clusterid"
+
+      # Add MLSpark & Event Hubs
+      - name: Create Cluster
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            sleep 60
+            databricks libraries install --maven-resolver https://mmlspark.azureedge.net/maven --maven-coordinates com.microsoft.ml.spark:mmlspark_2.11:1.0.0-rc2 --cluster-id {{ env.clusterid }}
+            databricks libraries install --maven-coordinates com.microsoft.azure:azure-eventhubs-spark_2.11:2.3.17 --cluster-id {{ env.clusterid }}
