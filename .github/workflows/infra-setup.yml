@@ -41,7 +41,6 @@ jobs:
           subscription=$(az account show --query "id" -o tsv)
           echo "subscription=subscription" >> $GITHUB_ENV
           echo "Retrieved subscription ID: $subscription"
-          console.log("Retrieved subscription ID: $subscription")
 
       # Deploy infrastructure
       - name: Deploy ARM Template
@@ -51,7 +50,6 @@ jobs:
             dbId=$(az deployment group create -f ./realtimepipeline.json -g ${env.AZURE_RESOURCE_GROUP} --query "dbId"  --output tsv)
             echo "dbId=dbId" >> $GITHUB_ENV
             echo "Retrieved DB ID: $dbId"
-            console.log("Retrieved DB ID: $dbId")
 
       # Get AAD token for databricks portal
       - name: Get AAD Token
@@ -63,7 +61,6 @@ jobs:
             accesstoken=$(echo ${tokensplit[@]:3:1})
             echo "accesstoken=accesstoken" >> $GITHUB_ENV
             echo "Retrieved Access Token"
-            console.log("Retrieved Access Token")
 
       # Get Azure Management token
       - name: Get Azure Management Token
@@ -75,7 +72,6 @@ jobs:
             mgmtaccesstoken=$(echo ${tokensplit[@]:3:1})
             echo "mgmtaccesstoken=mgmtaccesstoken" >> $GITHUB_ENV
             echo "Retrieved Management Access Token"
-            console.log("Retrieved Management Access Token")
 
       # Get Databricks Workspace URI
       - name: Get Databricks Workspace URI
@@ -88,7 +84,6 @@ jobs:
             workspaceurl=$(echo $workspaceraw | sed -n "s/^.*\(adb.*azuredatabricks\.net\).*$/\1/p")
             echo "workspaceurl=workspaceurl" >> $GITHUB_ENV
             echo "Retrieved Workspace URI"
-            console.log("Retrieved Workspace URI")
 
       # Create PAT token
       - name: Create PAT Token
