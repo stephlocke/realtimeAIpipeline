@@ -59,7 +59,7 @@ jobs:
           subscriptionId: ${{env.subscription}}
           resourceGroupName: ${{env.AZURE_RESOURCE_GROUP}}
           template: ./realtimepipeline.json
-          parameters: query=dbId
+          parameters:
         # output dbId variable from template
       - run: |
           dbId=${{steps.deploy.outputs.dbId}}
