@@ -42,13 +42,13 @@ jobs:
           echo "subscription=subscription" >> $GITHUB_ENV
           echo "Retrieved subscription ID: $subscription"
 
-      # Deploy infrastructure
+      # Deploy ARM Template
       - name: Deploy ARM Template
         uses: azure/CLI@v1
         with:
           inlineScript: |
             echo "Using name '${{env.AZURE_RESOURCE_GROUP}}'"
-            dbId=$(az deployment group create -f ./realtimepipeline.json -g ${{env.AZURE_RESOURCE_GROUP}} --query "dbId"  --output tsv)
+            dbId=$(az deployment group create -f ./realtimepipeline.json -g ${{env.AZURE_RESOURCE_GROUP}} --query "dbId"  --output tsv).outputs.dbId
             echo "dbId=dbId" >> $GITHUB_ENV
             echo "Retrieved DB ID: $dbId"
 
@@ -84,7 +84,7 @@ jobs:
             "https://management.azure.com/subscriptions/${{env.subscription}}/resourceGroups/${{env.AZURE_RESOURCE_GROUP}}/providers/Microsoft.Databricks/workspaces?api-version=2018-04-01")
             workspaceurl=$(echo $workspaceraw | sed -n "s/^.*\(adb.*azuredatabricks\.net\).*$/\1/p")
             echo "workspaceurl=workspaceurl" >> $GITHUB_ENV
-            echo "Retrieved Workspace URI"
+            echo "Retrieved Workspace URI: $workspaceurl"
 
       # Create PAT token
       - name: Create PAT Token
