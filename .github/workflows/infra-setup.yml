@@ -47,7 +47,8 @@ jobs:
         uses: azure/CLI@v1
         with:
           inlineScript: |
-            dbId=$(az deployment group create -f ./realtimepipeline.json -g ${env.AZURE_RESOURCE_GROUP} --query "dbId"  --output tsv)
+            echo "Using name '${{env.AZURE_RESOURCE_GROUP}}'"
+            dbId=$(az deployment group create -f ./realtimepipeline.json -g ${{env.AZURE_RESOURCE_GROUP}} --query "dbId"  --output tsv)
             echo "dbId=dbId" >> $GITHUB_ENV
             echo "Retrieved DB ID: $dbId"
 
@@ -55,7 +56,7 @@ jobs:
       - name: Get AAD Token
         uses: azure/CLI@v1
         with:
-          script: |
+          inlineScript: |
             token=$(az account get-access-token --resource "2ff814a6-3304-4ab8-85cb-cd0e6f879c1d")
             tokensplit=($(echo $token | tr "\"" "\n"))
             accesstoken=$(echo ${tokensplit[@]:3:1})
@@ -66,7 +67,7 @@ jobs:
       - name: Get Azure Management Token
         uses: azure/CLI@v1
         with:
-          script: |
+          inlineScript: |
             token=$(az account get-access-token --resource "https://management.core.windows.net/")
             tokensplit=($(echo $token | tr "\"" "\n"))
             mgmtaccesstoken=$(echo ${tokensplit[@]:3:1})
@@ -77,10 +78,10 @@ jobs:
       - name: Get Databricks Workspace URI
         uses: azure/CLI@v1
         with:
-          script: |
+          inlineScript: |
             workspaceraw=$(curl -X GET \
-            -H "Authorization: Bearer ${env.mgmtaccesstoken}" \
-            "https://management.azure.com/subscriptions/${env.subscription}/resourceGroups/${env.AZURE_RESOURCE_GROUP}/providers/Microsoft.Databricks/workspaces?api-version=2018-04-01")
+            -H "Authorization: Bearer ${{env.mgmtaccesstoken}}" \
+            "https://management.azure.com/subscriptions/${{env.subscription}}/resourceGroups/${{env.AZURE_RESOURCE_GROUP}}/providers/Microsoft.Databricks/workspaces?api-version=2018-04-01")
             workspaceurl=$(echo $workspaceraw | sed -n "s/^.*\(adb.*azuredatabricks\.net\).*$/\1/p")
             echo "workspaceurl=workspaceurl" >> $GITHUB_ENV
             echo "Retrieved Workspace URI"
@@ -89,11 +90,11 @@ jobs:
       - name: Create PAT Token
         uses: azure/CLI@v1
         with:
-          script: |
-            requestpat=$(curl -sf "https://${env.workspaceurl}/api/2.0/token/create" \
-            -H "Authorization: Bearer ${env.accesstoken}" \
-            -H "X-Databricks-Azure-SP-Management-Token: ${env.mgmtaccesstoken}" \
-            -H "X-Databricks-Azure-Workspace-Resource-Id: ${env.dbId}" \
+          inlineScript: |
+            requestpat=$(curl -sf "https://${{env.workspaceurl}}/api/2.0/token/create" \
+            -H "Authorization: Bearer ${{env.accesstoken}}" \
+            -H "X-Databricks-Azure-SP-Management-Token: ${{env.mgmtaccesstoken}}" \
+            -H "X-Databricks-Azure-Workspace-Resource-Id: ${{env.dbId}}" \
             -d '{ "lifetime_seconds": 3000, "comment": "Redgate streamed!" }')
             tokensplit=($(echo $requestpat | tr "\"" "\n"))
             pattoken=$(echo ${tokensplit[@]:3:1})
@@ -103,21 +104,21 @@ jobs:
       - name: Setup Databricks CLI
         uses: azure/CLI@v1
         with:
-          script: |
+          inlineScript: |
             virtualenv -p /usr/bin/python3.8 databrickscli
             source databrickscli/bin/activate
             pip3 install databricks-cli
             touch ~/.databrickscfg
             echo "[DEFAULT]" >> ~/.databrickscfg
-            echo "host = https://${env.workspaceurl}" >> ~/.databrickscfg
-            echo "token = ${env.pattoken}" >> ~/.databrickscfg
+            echo "host = https://${{env.workspaceurl}}" >> ~/.databrickscfg
+            echo "token = ${{env.pattoken}}" >> ~/.databrickscfg
             echo "" >> ~/.databrickscfg
 
       # Create cluster
       - name: Create Cluster
         uses: azure/CLI@v1
         with:
-          script: |
+          inlineScript: |
             clusterraw=$(databricks clusters create --json "
             {\"cluster_name\": \"autoscaling-cluster\",
             \"spark_version\": \"6.6.x-scala2.11\",
@@ -136,7 +137,7 @@ jobs:
       - name: Create Cluster
         uses: azure/CLI@v1
         with:
-          script: |
+          inlineScript: |
             sleep 60
-            databricks libraries install --maven-resolver https://mmlspark.azureedge.net/maven --maven-coordinates com.microsoft.ml.spark:mmlspark_2.11:1.0.0-rc2 --cluster-id ${env.clusterid}
-            databricks libraries install --maven-coordinates com.microsoft.azure:azure-eventhubs-spark_2.11:2.3.17 --cluster-id ${env.clusterid}
+            databricks libraries install --maven-resolver https://mmlspark.azureedge.net/maven --maven-coordinates com.microsoft.ml.spark:mmlspark_2.11:1.0.0-rc2 --cluster-id ${{env.clusterid}}
+            databricks libraries install --maven-coordinates com.microsoft.azure:azure-eventhubs-spark_2.11:2.3.17 --cluster-id ${{env.clusterid}}
