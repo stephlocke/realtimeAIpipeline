@@ -22,6 +22,27 @@ resource storeImages 'Microsoft.Storage/storageAccounts/blobServices/containers@
   name: concat(store.name,'/default/images')
 }
 
+// eventhub
+resource eventhub 'Microsoft.EventHub/namespaces@2021-01-01-preview' = {
+  name: concat(rg, 'eh')
+  location: location  
+}
+resource ehTweets 'Microsoft.EventHub/namespaces/eventhubs@2021-01-01-preview' = {
+  name: concat(eventhub.name,'/ehTweets')
+}
+resource ehImages 'Microsoft.EventHub/namespaces/eventhubs@2021-01-01-preview' = {
+  name: concat(eventhub.name,'/ehImages')
+}
+resource ehAuth 'Microsoft.EventHub/namespaces/authorizationRules@2021-01-01-preview' = {
+  name: concat(eventhub.name,'/RootMAnageSharedAccessKey')
+  properties: {
+    rights: [
+      'Listen'
+      'Manage'
+      'Send'
+    ]
+  }
+}
 // cognitive services
 resource cogsvc 'Microsoft.CognitiveServices/accounts@2017-04-18' = {
   name: concat(rg, 'cogsvc')
@@ -41,7 +62,7 @@ resource databricks 'Microsoft.Databricks/workspaces@2018-04-01' = {
   }
 }
 
-// logic apps
+// logic apps connectors
 resource lgBlob 'Microsoft.Web/connections@2016-06-01' = {
   name: concat(rg, 'blob')
   location: location
@@ -66,7 +87,20 @@ resource lgTwitter 'Microsoft.Web/connections@2016-06-01' = {
     }
   }
 }
+resource lgEH 'Microsoft.Web/connections@2016-06-01' = {
+  name: concat(rg, 'eventhubs')
+  location: location
+  properties: {
+    api: {
+      id: concat(apiFragment, 'eventhubs')
+    }
+    parameterValues: {
+      connectionString: listKeys(ehAuth.id, '2017-04-01').primaryConnectionString
+    }
+  }
+}
 
+// logic app
 resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
   name: concat(rg, 'logic')
   location: location
@@ -201,10 +235,60 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
                     }
                   }
                 }
+                Notify_About_Image: {
+                  description: 'Publish an event containing the media URL'
+                  runAfter: {
+                    Store_Image: [
+                      'Succeeded'
+                    ]
+                  }
+                  type: 'ApiConnection'
+                  inputs: {
+                    body: {
+                      ContentData: '@{base64(item())}'
+                    }
+                  }
+                  host: {
+                    connection: {
+                      name: '@parameters(\'$connections\')[\'eventhubs\'][\'connectionId\']'
+                    }
+                  }
+                  method: 'post'
+                  path: '/@{encodeURIComponent(\'images\')}/events'
+                }
               }
             }
           }
         }
+        Notify_about_tweets: {
+          description: 'Iterate to through tweets'
+          runAfter: {
+            Process_for_images: [
+              'Succeeded'
+            ]
+          }
+          type: 'Foreach'
+          foreach: '@body(\'Search_Tweets\')'
+          actions: {
+            Post_tweet: {
+              description: 'Publish an event containing the tweet JSON'
+              runAfter: {}
+              type: 'ApiConnection'
+              inputs: {
+                body: {
+                  ContentData: '@{base64(item())}'
+                }
+              }
+              host: {
+                connection: {
+                  name: '@parameters(\'$connections\')[\'eventhubs\'][\'connectionId\']'
+                }
+              }
+              method: 'post'
+              path: '/@{encodeURIComponent(\'tweets\')}/events'
+            }
+          }
+        }        
       }
     }
     parameters: {
@@ -219,6 +303,11 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
             connectionId: lgTwitter.id
             connectionName:'twitter'
             id: concat(apiFragment, 'twitter')
+          }
+          eventhub : {
+            connectionId: lgEH.id
+            connectionName:'eventhub'
+            id: concat(apiFragment, 'eventhubs')
           }
         } 
       }
