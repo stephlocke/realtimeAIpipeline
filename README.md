@@ -11,6 +11,7 @@ In just 60 minutes, this session will demonstrate an end to end data pipeline su
  ### Fork the repo
  1. In GitHub, fork the repository
  2. [Create a service principal and add to GitHub environment](https://docs.microsoft.com/en-us/azure/developer/github/connect-from-azure)
+ 3. Change the desired resource group name in [Github Action](.github/workflows/infra-setup.yml)
  3. Trigger the Github action
 
  ### Building a logic app
@@ -21,6 +22,7 @@ In just 60 minutes, this session will demonstrate an end to end data pipeline su
 Use the windows clipboard ring (win+v) to make these available to you
 1. Navigate to the event hub and grab the connection string for the listener policy
 2. Go to the cognitive service, and get the connection key and endpoint
+
 ### Building data streams
 1. Open DataBricks workspace
 2. In the [workspace](https://docs.azuredatabricks.net/user-guide/workspace.html) section for your user, import the [dbc](AIpipeline.dbc) from this repo
