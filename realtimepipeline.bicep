@@ -278,7 +278,7 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
               type: 'ApiConnection'
               inputs: {
                 body: {
-                  ContentData: '@{base64(item())}'
+                  ContentData: '@{base64(item()[\'TweetText\'])}'
                 }
                 host: {
                   connection: {
