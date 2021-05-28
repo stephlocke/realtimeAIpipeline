@@ -130,16 +130,16 @@ jobs:
             echo "" >> ~/.databrickscfg
             clusterraw=$(databricks clusters create --json "
             {\"cluster_name\": \"autoscaling-cluster\",
-            \"spark_version\": \"6.6.x-scala2.11\",
-              \"node_type_id\": \"Standard_D3_v2\",
+            \"spark_version\": \"6.4.x-scala2.11\",
+              \"node_type_id\": \"Standard_DS3_v2\",
               \"autoscale\" : {
                 \"min_workers\": 1,
-                \"max_workers\": 5
+                \"max_workers\": 2
               },
               \"autotermination_minutes\":30
             }")
             clustersplit=($(echo $clusterraw | tr "\"" "\n"))
             clusterid=$(echo ${clustersplit[@]:3:1})
             sleep 60
-            databricks libraries install --maven-repo https://mmlspark.azureedge.net/maven --maven-coordinates com.microsoft.ml.spark:mmlspark_2.11:1.0.0-rc2 --cluster-id $clusterid
+            databricks libraries install --maven-repo https://mmlspark.azureedge.net/maven --maven-coordinates com.microsoft.ml.spark:mmlspark_2.11:1.0.0-rc3 --cluster-id $clusterid
             databricks libraries install --maven-coordinates com.microsoft.azure:azure-eventhubs-spark_2.11:2.3.17 --cluster-id $clusterid
