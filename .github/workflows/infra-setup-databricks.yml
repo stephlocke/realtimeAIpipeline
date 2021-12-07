@@ -1,9 +1,9 @@
 name: setup infrastructure - databricks
 
-on:
-  push:
-    branches-ignore:
-        - "main"
+# on:
+#   push:
+#     branches-ignore:
+#         - main
 
 env:
   # Common variables

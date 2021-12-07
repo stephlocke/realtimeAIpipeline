@@ -1,9 +1,6 @@
 name: setup infrastructure - logicapps
 
-on:
-  push:
-    branches:
-        - "main"
+on: push
 
 env:
   # Common variables
@@ -45,16 +42,6 @@ jobs:
           echo "subscription=$subscription" >> $GITHUB_ENV
           echo "Retrieved subscription ID: $subscription"
 
-      # Deploy ARM Template
-      #- name: Deploy ARM Template
-      #  uses: azure/CLI@v1
-      #  with:
-      #    inlineScript: |
-      #      echo "Using resource group '${{env.AZURE_RESOURCE_GROUP}}'"
-      #      dbId=$(az deployment group create -f ./realtimepipeline.json -g ${{env.AZURE_RESOURCE_GROUP}} --query "dbId"  --output tsv).outputs.dbId
-      #      echo "dbId=$dbId" >> $GITHUB_ENV
-      #      echo "Retrieved DB ID: $dbId"
-      
       # Deploy ARM template
       - name: Deploy ARM template
         id: deploy
@@ -63,85 +50,3 @@ jobs:
           subscriptionId: ${{env.subscription}}
           resourceGroupName: ${{env.AZURE_RESOURCE_GROUP}}
           template: ./realtimepipeline-logicapps.json
-
-      # Get deployment outputs
-      - name: Get deployment outputs
-        run: |
-          dbId=${{steps.deploy.outputs.dbId}}
-          echo "dbId=$dbId" >> $GITHUB_ENV
-          echo "Retrieved DB ID: $dbId"
-
-      # Get AAD token for databricks portal
-      - name: Get AAD Token
-        uses: azure/CLI@v1
-        with:
-          inlineScript: |
-            token=$(az account get-access-token --resource "2ff814a6-3304-4ab8-85cb-cd0e6f879c1d")
-            tokensplit=($(echo $token | tr "\"" "\n"))
-            accesstoken=$(echo ${tokensplit[@]:3:1})
-            echo "accesstoken=$accesstoken" >> $GITHUB_ENV
-            echo "Retrieved Access Token"
-
-      # Get Azure Management token
-      - name: Get Azure Management Token
-        uses: azure/CLI@v1
-        with:
-          inlineScript: |
-            token=$(az account get-access-token --resource "https://management.core.windows.net/")
-            tokensplit=($(echo $token | tr "\"" "\n"))
-            mgmtaccesstoken=$(echo ${tokensplit[@]:3:1})
-            echo "mgmtaccesstoken=$mgmtaccesstoken" >> $GITHUB_ENV
-            echo "Retrieved Management Access Token"
-
-      # Get Databricks Workspace URI
-      - name: Get Databricks Workspace URI
-        uses: azure/CLI@v1
-        with:
-          inlineScript: |
-            workspaceraw=$(curl -X GET \
-            -H "Authorization: Bearer ${{env.mgmtaccesstoken}}" \
-            "https://management.azure.com/subscriptions/${{env.subscription}}/resourceGroups/${{env.AZURE_RESOURCE_GROUP}}/providers/Microsoft.Databricks/workspaces?api-version=2018-04-01")
-            workspaceurl=$(echo $workspaceraw | sed -n "s/^.*\(adb.*azuredatabricks\.net\).*$/\1/p")
-            echo "workspaceurl=$workspaceurl" >> $GITHUB_ENV
-            echo "Retrieved Workspace URI: $workspaceurl"
-
-      # Create PAT token
-      - name: Create PAT Token
-        uses: azure/CLI@v1
-        with:
-          inlineScript: |
-            requestpat=$(curl -sf "https://${{env.workspaceurl}}/api/2.0/token/create" \
-            -H "Authorization: Bearer ${{env.accesstoken}}" \
-            -H "X-Databricks-Azure-SP-Management-Token: ${{env.mgmtaccesstoken}}" \
-            -H "X-Databricks-Azure-Workspace-Resource-Id: ${{env.dbId}}" \
-            -d '{ "lifetime_seconds": 3000, "comment": "Redgate streamed!" }')
-            tokensplit=($(echo $requestpat | tr "\"" "\n"))
-            pattoken=$(echo ${tokensplit[@]:3:1})
-            echo "pattoken=$pattoken" >> $GITHUB_ENV
-
-      # Setup Databricks CLI, Create cluster, Add MLSpark & Event Hubs
-      - name: Setup Databricks CLI, Create Cluster, Add Extras
-        uses: azure/CLI@v1
-        with:
-          inlineScript: |
-            pip install databricks-cli
-            touch ~/.databrickscfg
-            echo "[DEFAULT]" >> ~/.databrickscfg
-            echo "host = https://${{env.workspaceurl}}" >> ~/.databrickscfg
-            echo "token = ${{env.pattoken}}" >> ~/.databrickscfg
-            echo "" >> ~/.databrickscfg
-            clusterraw=$(databricks clusters create --json "
-            {\"cluster_name\": \"autoscaling-cluster\",
-            \"spark_version\": \"9.1.x-scala2.12\",
-              \"node_type_id\": \"Standard_DS3_v2\",
-              \"autoscale\" : {
-                \"min_workers\": 1,
-                \"max_workers\": 2
-              },
-              \"autotermination_minutes\":30
-            }")
-            clustersplit=($(echo $clusterraw | tr "\"" "\n"))
-            clusterid=$(echo ${clustersplit[@]:3:1})
-            sleep 60
-            databricks libraries install --maven-repo https://mmlspark.azureedge.net/maven --maven-coordinates com.microsoft.ml.spark:synapseml_2.12:0.9.4 --cluster-id $clusterid
-            databricks libraries install --maven-coordinates com.microsoft.azure:azure-eventhubs-spark_2.12:2.3.21 --cluster-id $clusterid
