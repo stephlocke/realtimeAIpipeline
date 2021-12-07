@@ -25,7 +25,7 @@ jobs:
       # Transpile bicep file into ARM template
       - name: Build ARM Template from bicep file
         run: |
-          az bicep build --file ./realtimepipeline.bicep
+          az bicep build --file ./realtimepipeline-databricks.bicep
 
       # Login to Azure
       - name: Azure Login

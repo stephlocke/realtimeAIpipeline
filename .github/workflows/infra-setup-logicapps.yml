@@ -62,7 +62,7 @@ jobs:
         with:
           subscriptionId: ${{env.subscription}}
           resourceGroupName: ${{env.AZURE_RESOURCE_GROUP}}
-          template: ./realtimepipeline-databricks.json
+          template: ./realtimepipeline-logicapps.json
 
       # Get deployment outputs
       - name: Get deployment outputs
