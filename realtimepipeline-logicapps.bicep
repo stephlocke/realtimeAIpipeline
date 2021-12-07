@@ -12,12 +12,17 @@ resource store 'Microsoft.Storage/storageAccounts@2021-02-01' = {
   }
 }
 resource storeTweets 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-02-01' = {
-  name: '${store.name}/default/tweets'
+  name: '${store.name}/default/rawtweets'
 }
 resource storeImages 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-02-01' = {
-  name: '${store.name}/default/images'
+  name: '${store.name}/default/rawimages'
 }
-
+resource storeTweetsAI 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-02-01' = {
+  name: '${store.name}/default/aitweets'
+}
+resource storeImagesAI 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-02-01' = {
+  name: '${store.name}/default/aiimages'
+}
 // eventhub
 resource eventhub 'Microsoft.EventHub/namespaces@2021-01-01-preview' = {
   name: '${rg}eh'
@@ -87,10 +92,22 @@ resource lgEH 'Microsoft.Web/connections@2016-06-01' = {
     }
   }
 }
+resource lgCS 'Microsoft.Web/connections@2016-06-01' = {
+  name: '${rg}lgCS'
+  location: location
+  properties: {
+    api: {
+      id: '${apiFragment}lgCS'
+    }
+    parameterValues: {
+      connectionString: listKeys(cogsvc.id, '2017-04-18').primaryConnectionString
+    }
+  }
+}
 
-// logic app
+// logic app - getters
 resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
-  name: '${rg}logic'
+  name: '${rg}fetch'
   location: location
   properties: {
     state: 'Enabled'
@@ -303,4 +320,126 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
       }
     }
   } 
+}
+
+// Logic app - image analysis
+resource ImageCV 'Microsoft.Logic/workflows@2019-05-01' = {
+  name: '${rg}images'
+  location: location
+  properties: {
+    state: 'Enabled'
+    definition: {
+      '$schema': 'https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#'
+      parameters: {
+          '$connections': {
+              type: 'Object'
+          }
+      }
+      triggers: {
+        'New image' : {
+          evaluatedRecurrence: {
+            frequency: 'Minute'
+            interval: 1
+          }
+          inputs: {
+            host: {
+              connection: {
+                name: '@parameters(\'$connections\')[\'eventhub\'][\'connectionId\']'
+              }
+              event: '@{encodeURIComponent(\'ehimages\')}/events'
+            }
+            method: 'get'
+            path: '/@{encodeURIComponent(\'ehimages\')}/events'
+            queries: {
+              consumerGroupName: '$Default'
+              contentType: 'application/octet-stream'
+              maximumEventcount: 10
+            }
+          }
+          recurrence: {
+            frequency: 'Minute'
+            interval: 1
+          }
+          splitOn: '@triggerBody()'
+          type: 'ApiConnection'
+        }
+      }
+      actions: {
+        'Analyse image': {
+          inputs: {
+            body: {
+              url: '@base64ToString(@triggerBody()[\'ContentData\'])'
+            }
+            host:{
+              connection: {
+                name: '@parameters(\'$connections\')[\'cogsvcs\'][\'connectionId\']'
+              }
+            }
+            method: 'post'
+            path: '/v3/subdomain/@{encodeURIComponent(encodeURIComponent(\'autoFilledSubdomain\'))}/vision/v2.0/analyze'
+            queries: {
+              format: 'Image URL'
+              visualFeatures: 'Tags,Description,Categories'
+            }
+          }
+          runAfter: {}
+          type: 'ApiConnection'
+        }
+        'Push to blob': {
+          inputs: {
+            body: '@body(\'Analyse image\')'
+            headers: {
+              ReadFileMetadataFromServer: true
+            }
+            host: {
+              connection: {
+                name: '@parameters(\'$connections\')[\'azureblob\'][\'connectionId\']'
+              }
+            }
+            method: 'post'
+            path: '/v2/datasets/@{encodeURIComponent(encodeURIComponent(\'AccountNameFromSettings\'))}/files'
+            queries: {
+              folderPath: 'aiimages'
+              name: '@base64ToString(@triggerBody()[\'ContentData\'])'
+              queryParametersSingleEncoded: true
+            }
+          }
+          runAfter: {
+            'Analyse image': [
+              'Succeeded'
+            ]
+          }
+          runtimeConfiguration: {
+            contentTransfer: {
+              transferMode: 'Chunked'
+            }
+          }
+          type: 'ApiConnection'
+        }
+      }
+
+
+    }
+    parameters: {
+      '$connections':{
+        value:{
+          azureblob : {
+            connectionId: lgBlob.id
+            connectionName:'store'
+            id: '${apiFragment}azureblob'
+          }
+          eventhub : {
+            connectionId: lgEH.id
+            connectionName:'eventhub'
+            id: '${apiFragment}eventhubs'
+          }
+          computervision : {
+            connectionId: lgCS.id
+            connectionName:'cogsvcs'
+            id: '${apiFragment}cogsvcs'
+          }
+        } 
+      }
+    } 
+  }
 }
