@@ -100,7 +100,8 @@ resource lgCS 'Microsoft.Web/connections@2016-06-01' = {
       id: '${apiFragment}lgCS'
     }
     parameterValues: {
-      connectionString: listKeys(cogsvc.id, '2017-04-18').primaryConnectionString
+      siteUrl: cogsvc.properties.endpoint
+      apiKey: listKeys(cogsvc.id, '2017-04-18').primaryKey
     }
   }
 }
