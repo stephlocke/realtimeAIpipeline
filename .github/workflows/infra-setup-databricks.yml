@@ -1,13 +1,12 @@
 name: setup infrastructure - databricks
 
-# on:
-#   push:
-#     branches-ignore:
-#         - main
+permissions:
+      id-token: write
+      contents: read
 
 env:
   # Common variables
-  AZURE_RESOURCE_GROUP: "datamindstestingdatabricks"
+  AZURE_RESOURCE_GROUP: "realtimeaipipeline"
   LOCATION: "uksouth"
   # Enable this variable to allow set-env (https://github.blog/changelog/2020-10-01-github-actions-deprecating-set-env-and-add-path-commands/)
   #ACTIONS_ALLOW_UNSECURE_COMMANDS: true
@@ -27,11 +26,12 @@ jobs:
         run: |
           az bicep build --file ./realtimepipeline-databricks.bicep
 
-      # Login to Azure
-      - name: Azure Login
+      - name: 'Az CLI login'
         uses: azure/login@v1
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+            client-id: ${{ secrets.AZURE_CLIENT_ID }}
+            tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+            subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       # Create resource group
       - name: Create Resource Group
