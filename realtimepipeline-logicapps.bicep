@@ -101,7 +101,7 @@ resource lgCS 'Microsoft.Web/connections@2016-06-01' = {
     }
     parameterValues: {
       siteUrl: cogsvc.properties.endpoint
-      apiKey: listKeys(cogsvc.id, '2017-04-18').primaryKey
+      apiKey: listKeys(cogsvc.id, '2017-04-18').key1
     }
   }
 }
