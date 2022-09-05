@@ -26,7 +26,7 @@ jobs:
       # Transpile bicep file into ARM template
       - name: Build ARM Template from bicep file
         run: |
-          az bicep build --file ./realtimepipeline-databricks.bicep
+          az bicep build --file ./realtimepipeline-logicapps.bicep
       - name: 'Az CLI login'
         uses: azure/login@v1
         with:
