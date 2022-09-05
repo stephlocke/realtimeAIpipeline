@@ -1,14 +1,10 @@
 var rg = resourceGroup().name
 var location  = resourceGroup().location
-var apiFragment  = concat(subscription().id, '/providers/Microsoft.Web/locations/',location,'/managedApis/')
+var apiFragment  = '${subscription().id}/providers/Microsoft.Web/locations/${location}/managedApis/'
 var managedResourceGroupName  = '${subscription().id}/resourceGroups/databricks-rg-db-${uniqueString(rg, resourceGroup().id)}'
-var Succeeded = [
-  'Succeeded'
-]
-
 // storage
 resource store 'Microsoft.Storage/storageAccounts@2021-02-01' = {
-  name: concat(rg, 'store')
+  name: '${rg}store'
   kind: 'StorageV2'
   location: location
   sku: {
@@ -16,25 +12,25 @@ resource store 'Microsoft.Storage/storageAccounts@2021-02-01' = {
   }
 }
 resource storeTweets 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-02-01' = {
-  name: concat(store.name,'/default/tweets')
+  name: '${store.name}/default/tweets'
 }
 resource storeImages 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-02-01' = {
-  name: concat(store.name,'/default/images')
+  name: '${store.name}/default/images'
 }
 
 // eventhub
 resource eventhub 'Microsoft.EventHub/namespaces@2021-01-01-preview' = {
-  name: concat(rg, 'eh')
+  name: '${rg}eh'
   location: location  
 }
 resource ehTweets 'Microsoft.EventHub/namespaces/eventhubs@2017-04-01' = {
-  name: concat(eventhub.name,'/ehTweets')
+  name: '${eventhub.name}/ehTweets'
 }
 resource ehImages 'Microsoft.EventHub/namespaces/eventhubs@2017-04-01' = {
-  name: concat(eventhub.name,'/ehImages')
+  name: '${eventhub.name}/ehImages'
 }
 resource ehAuth 'Microsoft.EventHub/namespaces/authorizationRules@2017-04-01' = {
-  name: concat(eventhub.name,'/RootMAnageSharedAccessKey')
+  name: '${eventhub.name}/RootMAnageSharedAccessKey'
   properties: {
     rights: [
       'Listen'
@@ -45,7 +41,7 @@ resource ehAuth 'Microsoft.EventHub/namespaces/authorizationRules@2017-04-01' = 
 }
 // cognitive services
 resource cogsvc 'Microsoft.CognitiveServices/accounts@2017-04-18' = {
-  name: concat(rg, 'cogsvc')
+  name: '${rg}cogsvc'
   location: location
   kind: 'CognitiveServices'
   sku: {
@@ -55,7 +51,7 @@ resource cogsvc 'Microsoft.CognitiveServices/accounts@2017-04-18' = {
 
 // databricks
 resource databricks 'Microsoft.Databricks/workspaces@2018-04-01' = {
-  name: concat(rg, 'databricks')
+  name: '${rg}databricks'
   location: location
   properties: {
     managedResourceGroupId: managedResourceGroupName
@@ -64,11 +60,11 @@ resource databricks 'Microsoft.Databricks/workspaces@2018-04-01' = {
 
 // logic apps connectors
 resource lgBlob 'Microsoft.Web/connections@2016-06-01' = {
-  name: concat(rg, 'blob')
+  name: '${rg}blob'
   location: location
   properties: {
     api: {
-      id: concat(apiFragment, 'azureblob')
+      id: '${apiFragment}azureblob'
     }
     parameterValues: {
       accessKey: listKeys(store.id,'2021-02-01').keys[0].value
@@ -77,22 +73,22 @@ resource lgBlob 'Microsoft.Web/connections@2016-06-01' = {
   }
 }
 resource lgTwitter 'Microsoft.Web/connections@2016-06-01' = {
-  name: concat(rg, 'twitter')
+  name: '${rg}twitter'
   location: location
   properties: {
     api: {
-      id: concat(apiFragment, 'twitter')
+      id: '${apiFragment}twitter'
     }
     customParameterValues: {
     }
   }
 }
 resource lgEH 'Microsoft.Web/connections@2016-06-01' = {
-  name: concat(rg, 'eventhubs')
+  name: '${rg}eventhubs'
   location: location
   properties: {
     api: {
-      id: concat(apiFragment, 'eventhubs')
+      id: '${apiFragment}eventhubs'
     }
     parameterValues: {
       connectionString: listKeys(ehAuth.id, '2017-04-01').primaryConnectionString
@@ -102,7 +98,7 @@ resource lgEH 'Microsoft.Web/connections@2016-06-01' = {
 
 // logic app
 resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
-  name: concat(rg, 'logic')
+  name: '${rg}logic'
   location: location
   properties: {
     state: 'Disabled'
@@ -299,17 +295,17 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
           azureblob : {
             connectionId: lgBlob.id
             connectionName:'store'
-            id: concat(apiFragment, 'azureblob')
+            id: '${apiFragment}azureblob'
           }
           twitter : {
             connectionId: lgTwitter.id
             connectionName:'twitter'
-            id: concat(apiFragment, 'twitter')
+            id: '${apiFragment}twitter'
           }
           eventhub : {
             connectionId: lgEH.id
             connectionName:'eventhub'
-            id: concat(apiFragment, 'eventhubs')
+            id: '${apiFragment}eventhubs'
           }
         } 
       }
