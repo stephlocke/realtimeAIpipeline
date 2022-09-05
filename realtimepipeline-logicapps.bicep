@@ -97,7 +97,7 @@ resource lgCS 'Microsoft.Web/connections@2016-06-01' = {
   location: location
   properties: {
     api: {
-      id: '${apiFragment}lgCS'
+      id: '${apiFragment}cognitiveservicestextanalytics'
     }
     parameterValues: {
       siteUrl: cogsvc.properties.endpoint
@@ -111,7 +111,7 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
   name: '${rg}fetch'
   location: location
   properties: {
-    state: 'Enabled'
+    state: 'Disabled'
     definition: {
       '$schema': 'https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#'
       parameters: {
