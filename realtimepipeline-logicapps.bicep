@@ -328,7 +328,7 @@ resource ImageCV 'Microsoft.Logic/workflows@2019-05-01' = {
   name: '${rg}images'
   location: location
   properties: {
-    state: 'Enabled'
+    state: 'Disabled'
     definition: {
       '$schema': 'https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#'
       parameters: {
@@ -369,7 +369,7 @@ resource ImageCV 'Microsoft.Logic/workflows@2019-05-01' = {
         'Analyse image': {
           inputs: {
             body: {
-              url: '@base64ToString(@triggerBody()[\'ContentData\'])'
+              url: '@{base64ToString(@triggerBody()[\'ContentData\'])}'
             }
             host:{
               connection: {
