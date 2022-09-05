@@ -105,7 +105,7 @@ resource logicApp 'Microsoft.Logic/workflows@2019-05-01' = {
   name: concat(rg, 'logic')
   location: location
   properties: {
-    state: 'Enabled'
+    state: 'Disabled'
     definition: {
       '$schema': 'https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#'
       parameters: {
